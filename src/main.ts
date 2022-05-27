@@ -18,11 +18,11 @@ class BoardView extends TextFileView {
   }
 
   getViewType() {
-    return "board";
+    return "thinking-board";
   }
 
   getDisplayText() {
-    return "Board view";
+    return "Thinking Board";
   }
 
   async onLoadFile(file: TFile) {
@@ -98,14 +98,12 @@ export default class BoardPlugin extends Plugin {
     super.onload();
 
     this.registerView(
-      "board",
+      "thinking-board",
       (leaf: WorkspaceLeaf) => new BoardView(leaf, this)
     );
 
-    this.registerExtensions(["lol"], "board");
+    this.registerExtensions(["tk"], "thinking-board");
   }
 
-  onunload() {
-    console.log("Unloading board plugin...");
-  }
+  onunload() {}
 }
