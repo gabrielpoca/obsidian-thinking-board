@@ -1,5 +1,5 @@
 import { debounce } from "lodash";
-import { TextFileView, WorkspaceLeaf, Plugin, TFile } from "obsidian";
+import { TextFileView, WorkspaceLeaf, Plugin, TFile, TFolder } from "obsidian";
 
 import App from "./App.svelte";
 import { load, onSave } from "./session";
@@ -19,10 +19,6 @@ class BoardView extends TextFileView {
 
   getViewType() {
     return "thinking-board";
-  }
-
-  getDisplayText() {
-    return "Thinking Board";
   }
 
   async onLoadFile(file: TFile) {
@@ -103,7 +99,58 @@ export default class BoardPlugin extends Plugin {
     );
 
     this.registerExtensions(["tk"], "thinking-board");
+    this.registerCommands();
+    this.registerEvents();
   }
 
   onunload() {}
+
+  registerEvents() {
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file: TFile) => {
+        if (file instanceof TFolder) {
+          menu.addItem((item) => {
+            item
+              .setTitle("New Thinking Board")
+              .onClick(() => this.newBoard(file));
+          });
+        }
+      })
+    );
+  }
+
+  registerCommands() {
+    this.addCommand({
+      id: "create-new-thinking-board",
+      name: "New Thinking Board",
+      callback: () => this.newBoard(),
+    });
+  }
+
+  async newBoard(folder?: TFolder) {
+    const targetFolder = folder
+      ? folder
+      : this.app.fileManager.getNewFileParent(
+          this.app.workspace.getActiveFile()?.path || ""
+        );
+
+    try {
+      const path = window.require("path");
+
+      const targetFile = path.join(
+        targetFolder.path,
+        "Untitled Thinking Board.tk"
+      );
+
+      //@ts-ignore
+      await this.app.vault.createBinary(targetFile, "{}");
+
+      await this.app.workspace.activeLeaf.setViewState({
+        type: "thinking-board",
+        state: { file: targetFile },
+      });
+    } catch (e) {
+      console.error("Error creating board board:", e);
+    }
+  }
 }
