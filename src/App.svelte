@@ -1,0 +1,231 @@
+<script lang="ts">
+  import { onMount, onDestroy } from "svelte";
+  import { v4 as uuidv4 } from "uuid";
+  import {
+    cards,
+    connectingCardID,
+    zoom,
+    currentConnectionID,
+    lastPosition,
+    windowHeight,
+    windowWidth,
+    windowSizes,
+    connections,
+  } from "./stores";
+  import Box from "./Box.svelte";
+  import Card from "./Card.svelte";
+  import NewCard from "./NewCard.svelte";
+  import Zoom from "./Zoom.svelte";
+  import Connections from "./Connections.svelte";
+
+  import { saveFile } from "./files";
+  import { doubleClick } from "./doubleClick";
+  import { dragScroll } from "./dragScroll";
+  import { addCard, addConnection } from "./cardsActions";
+
+  export let shadowRoot;
+  export let app;
+  export let file;
+  export let view;
+
+  let showNewCardForm = false;
+  let cursorPos = { x: 0, y: 0 };
+  let grabbing = false;
+
+  function onDoubleClick() {
+    showNewCardForm = true;
+  }
+
+  function onClick({ detail: e }) {
+    $currentConnectionID = null;
+
+    if (showNewCardForm) showNewCardForm = false;
+
+    $lastPosition = {
+      x: Math.max(0, e.offsetX - 15),
+      y: Math.max(0, e.offsetY - 15),
+    };
+  }
+
+  function newCard({ detail: { content, x, y } }) {
+    showNewCardForm = false;
+
+    addCard({
+      content,
+      pos: { y, x },
+    });
+  }
+
+  function cardUp({ detail: id }) {
+    if ($connectingCardID && $connectingCardID !== id) {
+      addConnection($connectingCardID, id);
+    }
+  }
+
+  function onMouseMove(e) {
+    cursorPos = {
+      x: e.offsetX,
+      y: e.offsetY,
+    };
+  }
+
+  async function onPaste(e) {
+    const items = e.clipboardData.items;
+
+    for (const index in items) {
+      const item = items[index];
+
+      if (item.kind === "file") {
+        const file = item.getAsFile();
+
+        const content = await saveFile(
+          app,
+          file.name,
+          await file.arrayBuffer()
+        );
+
+        addCard({
+          content,
+          pos: cursorPos,
+        });
+      }
+    }
+  }
+
+  async function onDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const fs = window.require("fs/promises");
+
+    for (const f of e.dataTransfer.files) {
+      const ext = f.path.split(".").pop();
+
+      const path = await app.vault.getAvailablePathForAttachments(
+        uuidv4(),
+        ext
+      );
+
+      const buffer = await fs.readFile(f.path);
+
+      const content = await saveFile(app, path, buffer);
+
+      addCard({
+        content,
+        pos: cursorPos,
+      });
+    }
+  }
+
+  document.addEventListener("paste", onPaste);
+
+  onDestroy(() => {
+    document.removeEventListener("paste", onPaste);
+  });
+</script>
+
+<svelte:window
+  bind:innerHeight={$windowHeight}
+  bind:innerWidth={$windowWidth}
+/>
+
+<Zoom />
+
+{#if file}
+  <div style="width:{$windowWidth}px;height:{$windowHeight}px">
+    <main
+      id="canvas"
+      use:dragScroll={shadowRoot.host}
+      on:dragStart={() => (grabbing = true)}
+      on:dragEnd={() => (grabbing = false)}
+      on:drop={onDrop}
+      on:dragover={(e) => {
+        e.preventDefault();
+        return false;
+      }}
+      use:doubleClick
+      on:doubleClick={onDoubleClick}
+      on:singleClick={onClick}
+      on:mouseup={() => ($connectingCardID = null)}
+      on:mousemove|self={onMouseMove}
+      class:grabbing
+      style="transform:scale({$zoom});height:{$windowSizes.height}px;width:{$windowSizes.width}px"
+    >
+      <div class="backgroundColor" />
+      <div
+        class="background"
+        style="background-size: calc(25px * {2 - $zoom});"
+      />
+
+      <Connections />
+
+      {#if showNewCardForm}
+        <NewCard x={$lastPosition.x} y={$lastPosition.y} on:submit={newCard} />
+      {/if}
+
+      {#each $cards as card (card.id)}
+        <Card bind:card on:mouseup={cardUp} {view} {file} />
+      {/each}
+    </main>
+  </div>
+{/if}
+
+<style>
+  main {
+    --color-black: #20004b;
+    --color-accent: rgba(169, 106, 255, 1);
+    --card-max-width: 500px;
+  }
+
+  :global(*) {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  :global(.internal-embed) {
+    display: flex;
+  }
+
+  main {
+    min-width: 100%;
+    min-height: 100%;
+    width: 1000px;
+    height: 1000px;
+    position: relative;
+    transform-origin: top left;
+    color: #333;
+  }
+
+  .backgroundColor {
+    background: linear-gradient(45deg, #caa3ff 0%, #ffccdd 55%);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    pointer-events: none;
+  }
+
+  .background {
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAADKSURBVHgB7dWxDYMwEIXhc1iAFgl2YAQySbIJZJIkmzACO1DQZgEgZ4UyCS7uJIr/kywh+Zon7GcRAAAAAABwREGcjOPYZFnW6metK9fVL8vyLMvyIQ5cgkzT1K7r2n3bCyF0RVHcxJh5EA1x1RD3fzPzPJ+rqurF0EmMaYjL3sx25EyZB1FNwkwtxjyCvBJmcjHmEWRImOnFmHkQvci7jRRrWIyZB4ltpBf+Z5i45/GWuD2IWw3HBmvkc2+G+LesaxcAAAAAABzbG4IsQA+BmH+JAAAAAElFTkSuQmCC);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: 25px;
+    z-index: -1;
+    pointer-events: none;
+    transform-origin: top left;
+  }
+
+  .grabbing {
+    cursor: grabbing;
+  }
+
+  ul {
+    list-style-type: none;
+  }
+</style>

@@ -1,0 +1,10 @@
+{
+  "id": "com.gabrielpoca.board",
+  "name": "Thinking Board",
+  "version": "0.0.1",
+  "minAppVersion": "0.12.0",
+  "description": "Thinking Board is an Obsidian plugin for mind mapping, planning, mood boards, etc.",
+  "author": "Gabriel Pca",
+  "authorUrl": "https://gabrielpoca.com",
+  "isDesktopOnly": true
+}
