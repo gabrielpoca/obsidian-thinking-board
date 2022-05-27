@@ -7,6 +7,7 @@
   import { connectingCardID } from "./stores";
   import Box from "./Box.svelte";
   import EditCard from "./EditCard.svelte";
+  import { updateCard } from "./cardsActions";
 
   const dispatch = createEventDispatcher();
 
@@ -23,9 +24,18 @@
   let editing = false;
   let hover = false;
 
+  const onPositionUpdated = throttle(
+    ({ detail: { x, y } }) => {
+      updateCard(card.id, { pos: { x, y } });
+    },
+    300,
+    { trailing: true }
+  );
+
   function width(currentNode) {
     node = currentNode;
-    card = { ...card, width: node.getBoundingClientRect().width };
+
+    updateCard(card.id, { width: node.getBoundingClientRect().width });
   }
 
   function getNormalizedPath(path: string): NormalizedPath {
@@ -121,25 +131,31 @@
     if (node) card = { ...card, width: node.getBoundingClientRect().width };
   }
 
+  function onEdit({ detail: newCard }) {
+    editing = false;
+    updateCard(card.id, newCard);
+  }
+
   onMount(() => {
-    card = { ...card, width: node.getBoundingClientRect().width };
+    updateCard(card.id, { width: node.getBoundingClientRect().width });
   });
 </script>
 
 <Box
   useClickOutside={editing}
   on:clickOutside={() => (editing = false)}
-  on:mouseover={() => (hover = true)}
-  on:mouseout={() => (hover = false)}
-  action={width}
-  bind:x={card.pos.x}
-  bind:y={card.pos.y}
-  on:drop={() => dispatch("mouseup", card.id)}
   on:dbclick={() => (editing = true)}
+  on:drop={() => dispatch("mouseup", card.id)}
+  on:mouseout={() => (hover = false)}
+  on:mouseover={() => (hover = true)}
+  on:positionUpdated={onPositionUpdated}
+  action={width}
+  x={card.pos.x}
+  y={card.pos.y}
   zIndex={editing ? 50 : "auto"}
 >
   {#if editing}
-    <EditCard bind:card on:done={() => (editing = false)} />
+    <EditCard {card} on:submit={onEdit} />
   {:else}
     <div class="card">
       <div class="content">

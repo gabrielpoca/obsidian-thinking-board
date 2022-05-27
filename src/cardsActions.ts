@@ -20,6 +20,16 @@ export const removeCard = (id: string) => {
   cards.update((cards) => cards.filter((card) => card.id !== id));
 };
 
+export const updateCard = (id: string, newCard: any) => {
+  cards.update((cards) =>
+    cards.map((card) => {
+      if (card.id !== id) return card;
+
+      return { ...card, ...newCard };
+    })
+  );
+};
+
 export const addConnection = (start, end) => {
   connections.update((connections) => [
     { id: uuidv4(), start, end },

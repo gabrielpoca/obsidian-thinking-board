@@ -1,9 +1,10 @@
-<script>
+<script lang="ts">
   import { createEventDispatcher } from "svelte";
 
   import { clickOutside } from "./clickOutside";
   import { zoom } from "./stores";
 
+  export let positionUpdated = (fn) => fn;
   export let useClickOutside = false;
   export let action = (fn) => fn;
   export let zIndex = "auto";
@@ -22,6 +23,8 @@
       if (e.button !== 1) {
         x += (e.screenX - movingX) / $zoom;
         y += (e.screenY - movingY) / $zoom;
+
+        dispatch("positionUpdated", { x, y });
 
         movingX = e.screenX;
         movingY = e.screenY;

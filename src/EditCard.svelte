@@ -10,11 +10,11 @@
   export let card;
 
   const dispatch = createEventDispatcher();
+
   let value = card.content;
 
   function onSubmit() {
-    card.content = value;
-    dispatch("done");
+    dispatch("submit", { content: value });
   }
 </script>
 
