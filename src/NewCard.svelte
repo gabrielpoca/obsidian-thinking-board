@@ -10,7 +10,7 @@
   export let x = 0;
   export let y = 0;
 
-  let value;
+  let value: string;
 </script>
 
 <Box bind:x bind:y zIndex={50}>

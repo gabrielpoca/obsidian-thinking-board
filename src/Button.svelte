@@ -1,12 +1,16 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
 
-  export let type;
+  export let type: string | null = null;
 
   const dispatch = createEventDispatcher();
+
+  function onClick(e: MouseEvent) {
+    dispatch("click", e);
+  }
 </script>
 
-<button on:click={(e) => dispatch("click", e)} {type} class="root">
+<button on:click={onClick} {type} class="root">
   <slot />
 </button>
 

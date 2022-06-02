@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { currentConnectionID } from "./stores";
+
+  import { removeConnection } from "./cardsActions";
+
   import Box from "./Box.svelte";
   import Button from "./Button.svelte";
-  import { currentConnectionID, connections } from "./stores";
-  import { removeConnection } from "./cardsActions";
 
   export let x = 0;
   export let y = 0;

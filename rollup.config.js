@@ -8,6 +8,17 @@ import typescript from "@rollup/plugin-typescript";
 // import css from "rollup-plugin-css-only";
 // import { injectManifest } from "rollup-plugin-workbox";
 
+function typeCheck() {
+  return {
+    writeBundle() {
+      require("child_process").spawn("svelte-check", {
+        stdio: ["ignore", "inherit", "inherit"],
+        shell: true,
+      });
+    },
+  };
+}
+
 const production = !process.env.ROLLUP_WATCH;
 
 // function serve() {
@@ -38,14 +49,15 @@ const production = !process.env.ROLLUP_WATCH;
 export default {
   input: "src/main.ts",
   output: {
-    sourcemap: 'inline',
+    sourcemap: "inline",
     sourcemapExcludeSources: production,
     format: "cjs",
-    exports: 'default',
-    dir: "."
+    exports: "default",
+    dir: ".",
   },
-  external: ['obsidian'], // so it's not included
+  external: ["obsidian"], // so it's not included
   plugins: [
+    typeCheck(),
     typescript(),
     svelte({
       emitCss: false,

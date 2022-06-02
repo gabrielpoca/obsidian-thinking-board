@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { cards, currentConnectionID, lastPosition } from "./stores";
-  import EditConnection from "./EditConnection.svelte";
+  import type { Connection } from "./types";
 
-  export let connection;
+  import { cards, currentConnectionID, lastPosition } from "./stores";
+
+  export let connection: Connection;
 
   $: startCard = $cards.find((card) => card.id === connection.start);
   $: endCard = $cards.find((card) => card.id === connection.end);
@@ -16,7 +17,7 @@
   $: startY = startCard.pos.y + 15;
   $: endY = endCard.pos.y - startCard.pos.y + 10;
 
-  function onClick(e) {
+  function onClick(e: MouseEvent) {
     $lastPosition = { x: e.offsetX + 5, y: e.offsetY };
     $currentConnectionID = connection.id;
   }

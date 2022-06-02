@@ -39,9 +39,6 @@
     pointer-events: auto;
   }
 
-  .selectable :global(path) {
-  }
-
   .selectable :global(path:hover) {
     stroke-width: 15;
     cursor: pointer;

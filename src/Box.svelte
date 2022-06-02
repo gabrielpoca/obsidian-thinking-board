@@ -4,10 +4,9 @@
   import { clickOutside } from "./clickOutside";
   import { zoom } from "./stores";
 
-  export let positionUpdated = (fn) => fn;
   export let useClickOutside = false;
-  export let action = (fn) => fn;
-  export let zIndex = "auto";
+  export let action: (node: HTMLElement) => any = (fn) => fn;
+  export let zIndex: string | number = "auto";
   export let x = 0;
   export let y = 0;
 
@@ -18,8 +17,8 @@
   let movingX = x;
   let movingY = y;
 
-  function move(node, moving) {
-    const handler = (e) => {
+  function move(_node: HTMLElement, _moving: Boolean) {
+    const handler = (e: MouseEvent) => {
       if (e.button !== 1) {
         x += (e.screenX - movingX) / $zoom;
         y += (e.screenY - movingY) / $zoom;
@@ -32,7 +31,7 @@
     };
 
     return {
-      update(moving) {
+      update(moving: Boolean) {
         if (moving) {
           document.addEventListener("mousemove", handler);
         } else {
@@ -46,9 +45,9 @@
   }
 
   let clicks = 0;
-  let timer;
+  let timer: ReturnType<typeof setTimeout>;
 
-  function onClick(e) {
+  function onClick(e: MouseEvent) {
     e.stopPropagation();
 
     clicks += 1;
@@ -62,7 +61,7 @@
     }
   }
 
-  function mousedown(e) {
+  function mousedown(e: MouseEvent) {
     if (e.button === 1) return;
     movingX = e.screenX;
     movingY = e.screenY;
@@ -88,11 +87,13 @@
   use:action
   use:clickOutside={useClickOutside}
   on:clickOutside={() => dispatch("clickOutside")}
-  on:mousedown|self|preventDefault={mousedown}
-  on:mouseup={() => dispatch("drop")}
-  on:mouseover={mouseover}
-  on:mouseout={mouseout}
+  on:blur={() => dispatch("drop")}
   on:click={onClick}
+  on:focus={mouseover}
+  on:mousedown|self|preventDefault={mousedown}
+  on:mouseout={mouseout}
+  on:mouseover={mouseover}
+  on:mouseup={() => dispatch("drop")}
   use:move={moving}
   class:hover
   class:moving

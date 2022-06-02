@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { v4 as uuidv4 } from "uuid";
+  import type { TFile, App, TextFileView } from "obsidian";
+
   import {
     cards,
     connectingCardID,
@@ -10,9 +12,8 @@
     windowHeight,
     windowWidth,
     windowSizes,
-    connections,
   } from "./stores";
-  import Box from "./Box.svelte";
+
   import Card from "./Card.svelte";
   import NewCard from "./NewCard.svelte";
   import Zoom from "./Zoom.svelte";
@@ -21,12 +22,12 @@
   import { saveFile } from "./files";
   import { doubleClick } from "./doubleClick";
   import { dragScroll } from "./dragScroll";
-  import { addCard, addConnection } from "./cardsActions";
+  import { addCard, addConnection, undo, redo } from "./cardsActions";
 
-  export let shadowRoot;
-  export let app;
-  export let file;
-  export let view;
+  export let shadowRoot: ShadowRoot;
+  export let app: App;
+  export let file: TFile;
+  export let view: TextFileView;
 
   let showNewCardForm = false;
   let cursorPos = { x: 0, y: 0 };
@@ -62,14 +63,14 @@
     }
   }
 
-  function onMouseMove(e) {
+  function onMouseMove(e: MouseEvent) {
     cursorPos = {
       x: e.offsetX,
       y: e.offsetY,
     };
   }
 
-  async function onPaste(e) {
+  async function onPaste(e: ClipboardEvent) {
     const items = e.clipboardData.items;
 
     for (const index in items) {
@@ -81,6 +82,7 @@
         const content = await saveFile(
           app,
           file.name,
+          //@ts-ignore
           await file.arrayBuffer()
         );
 
@@ -92,20 +94,23 @@
     }
   }
 
-  async function onDrop(e) {
+  async function onDrop(e: DragEvent) {
     e.preventDefault();
     e.stopPropagation();
 
     const fs = window.require("fs/promises");
 
     for (const f of e.dataTransfer.files) {
+      //@ts-ignore
       const ext = f.path.split(".").pop();
 
+      //@ts-ignore
       const path = await app.vault.getAvailablePathForAttachments(
         uuidv4(),
         ext
       );
 
+      //@ts-ignore
       const buffer = await fs.readFile(f.path);
 
       const content = await saveFile(app, path, buffer);
@@ -117,6 +122,18 @@
     }
   }
 
+  function onKeydown(e: KeyboardEvent) {
+    if (e.metaKey && e.key === "z") {
+      e.preventDefault();
+      (e.shiftKey ? redo : undo)();
+    }
+  }
+
+  function onDragOver(e: DragEvent) {
+    e.preventDefault();
+    return false;
+  }
+
   document.addEventListener("paste", onPaste);
 
   onDestroy(() => {
@@ -125,6 +142,7 @@
 </script>
 
 <svelte:window
+  on:keydown={onKeydown}
   bind:innerHeight={$windowHeight}
   bind:innerWidth={$windowWidth}
 />
@@ -139,10 +157,7 @@
       on:dragStart={() => (grabbing = true)}
       on:dragEnd={() => (grabbing = false)}
       on:drop={onDrop}
-      on:dragover={(e) => {
-        e.preventDefault();
-        return false;
-      }}
+      on:dragover={onDragOver}
       use:doubleClick
       on:doubleClick={onDoubleClick}
       on:singleClick={onClick}
@@ -223,9 +238,5 @@
 
   .grabbing {
     cursor: grabbing;
-  }
-
-  ul {
-    list-style-type: none;
   }
 </style>

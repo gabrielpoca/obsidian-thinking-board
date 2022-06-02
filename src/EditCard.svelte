@@ -1,13 +1,14 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
 
-  import Box from "./Box.svelte";
-  import TextArea from "./TextArea.svelte";
-  import Button from "./Button.svelte";
-  import { currentConnectionID, cards, connections } from "./stores";
+  import type { Card } from "./types";
+
   import { removeCard } from "./cardsActions";
 
-  export let card;
+  import TextArea from "./TextArea.svelte";
+  import Button from "./Button.svelte";
+
+  export let card: Card;
 
   const dispatch = createEventDispatcher();
 

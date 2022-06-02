@@ -1,8 +1,9 @@
 <script lang="ts">
   import { throttle } from "lodash";
-  import { MarkdownRenderer } from "obsidian";
-  import snarkdown from "snarkdown";
+  import { MarkdownRenderer, TFile, TextFileView } from "obsidian";
   import { createEventDispatcher, onMount } from "svelte";
+
+  import type { Card } from "./types";
 
   import { connectingCardID } from "./stores";
   import Box from "./Box.svelte";
@@ -14,31 +15,30 @@
   const noBreakSpace = /\u00A0/g;
   const imageExt = ["bmp", "png", "jpg", "jpeg", "gif", "svg"];
   const audioExt = ["mp3", "wav", "m4a", "3gp", "flac", "ogg", "oga"];
-  const videoExt = ["mp4", "webm", "ogv"];
+  // const videoExt = ["mp4", "webm", "ogv"];
 
-  export let card;
-  export let view;
-  export let file;
+  export let card: Card;
+  export let view: TextFileView;
+  export let file: TFile;
 
-  let node;
+  let node: HTMLElement;
   let editing = false;
   let hover = false;
 
   const onPositionUpdated = throttle(
     ({ detail: { x, y } }) => {
-      updateCard(card.id, { pos: { x, y } });
+      updateCard({ id: card.id, pos: { x, y } });
     },
-    300,
-    { trailing: true }
+    500,
+    { trailing: true, leading: false }
   );
 
-  function width(currentNode) {
+  function width(currentNode: HTMLElement) {
     node = currentNode;
-
-    updateCard(card.id, { width: node.getBoundingClientRect().width });
+    card = { ...card, width: node.getBoundingClientRect().width };
   }
 
-  function getNormalizedPath(path: string): NormalizedPath {
+  function getNormalizedPath(path: string) {
     const stripped = path.replace(noBreakSpace, " ").normalize("NFC");
     const splitOnHash = stripped.split("#");
 
@@ -61,7 +61,7 @@
     };
   }
 
-  function markdownContent(container) {
+  function markdownContent(container: HTMLElement) {
     const el = document.createElement("div");
 
     MarkdownRenderer.renderMarkdown(card.content, el, file.path, view);
@@ -133,11 +133,11 @@
 
   function onEdit({ detail: newCard }) {
     editing = false;
-    updateCard(card.id, newCard);
+    updateCard({ id: card.id, ...newCard });
   }
 
   onMount(() => {
-    updateCard(card.id, { width: node.getBoundingClientRect().width });
+    card = { ...card, width: node.getBoundingClientRect().width };
   });
 </script>
 
