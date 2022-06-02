@@ -6,10 +6,12 @@ export interface Card {
     x: number;
     y: number;
   };
+  updatedAt: Date;
 }
 
 export interface Connection {
   id: string;
   start: string;
   end: string;
+  updatedAt: Date;
 }

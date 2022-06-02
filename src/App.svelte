@@ -59,7 +59,7 @@
 
   function cardUp({ detail: id }) {
     if ($connectingCardID && $connectingCardID !== id) {
-      addConnection($connectingCardID, id);
+      addConnection({ start: $connectingCardID, end: id });
     }
   }
 

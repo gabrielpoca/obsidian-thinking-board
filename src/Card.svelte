@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { throttle } from "lodash";
-  import { MarkdownRenderer, TFile, TextFileView } from "obsidian";
+  import type { TFile, TextFileView } from "obsidian";
   import { createEventDispatcher, onMount } from "svelte";
 
   import type { Card } from "./types";
@@ -8,14 +7,10 @@
   import { connectingCardID } from "./stores";
   import Box from "./Box.svelte";
   import EditCard from "./EditCard.svelte";
+  import MarkdownRender from "./MarkdownRender.svelte";
   import { updateCard } from "./cardsActions";
 
   const dispatch = createEventDispatcher();
-
-  const noBreakSpace = /\u00A0/g;
-  const imageExt = ["bmp", "png", "jpg", "jpeg", "gif", "svg"];
-  const audioExt = ["mp3", "wav", "m4a", "3gp", "flac", "ogg", "oga"];
-  // const videoExt = ["mp4", "webm", "ogv"];
 
   export let card: Card;
   export let view: TextFileView;
@@ -25,110 +20,17 @@
   let editing = false;
   let hover = false;
 
-  const onPositionUpdated = throttle(
-    ({ detail: { x, y } }) => {
-      updateCard({ id: card.id, pos: { x, y } });
-    },
-    500,
-    { trailing: true, leading: false }
-  );
-
-  function width(currentNode: HTMLElement) {
-    node = currentNode;
+  function updateWidth() {
     card = { ...card, width: node.getBoundingClientRect().width };
   }
 
-  function getNormalizedPath(path: string) {
-    const stripped = path.replace(noBreakSpace, " ").normalize("NFC");
-    const splitOnHash = stripped.split("#");
+  const onPositionUpdated = ({ detail: { x, y } }) => {
+    updateCard({ id: card.id, pos: { x, y } });
+  };
 
-    if (splitOnHash.length === 1) {
-      const splitOnAlias = splitOnHash[0].split("|");
-
-      return {
-        root: splitOnAlias[0],
-        subpath: "",
-        alias: splitOnAlias[1] || "",
-      };
-    }
-
-    const splitOnAlias = splitOnHash[1].split("|");
-
-    return {
-      root: splitOnHash[0],
-      subpath: "#" + splitOnAlias[0],
-      alias: splitOnAlias[1] || "",
-    };
-  }
-
-  function markdownContent(container: HTMLElement) {
-    const el = document.createElement("div");
-
-    MarkdownRenderer.renderMarkdown(card.content, el, file.path, view);
-
-    el.findAll(".internal-embed").map((el) => {
-      const src = el.getAttribute("src");
-
-      const normalizedPath = getNormalizedPath(src);
-      const target =
-        typeof src === "string" &&
-        view.app.metadataCache.getFirstLinkpathDest(
-          normalizedPath.root,
-          view.file.path
-        );
-
-      el.empty();
-
-      if (imageExt.contains(target.extension)) {
-        el.createEl(
-          "img",
-          {
-            attr: { src: view.app.vault.getResourcePath(target) },
-          },
-          (img) => {
-            if (el.hasAttribute("width")) {
-              img.setAttribute("width", el.getAttribute("width"));
-            }
-
-            if (el.hasAttribute("height")) {
-              img.setAttribute("height", el.getAttribute("height"));
-            }
-
-            if (el.hasAttribute("alt")) {
-              img.setAttribute("alt", el.getAttribute("alt"));
-            }
-          }
-        );
-
-        el.addClasses(["image-embed", "is-loaded"]);
-      }
-
-      if (audioExt.contains(target.extension)) {
-        el.createEl("audio", {
-          attr: {
-            controls: "",
-            src: view.app.vault.getResourcePath(target),
-            style: "pointer-events:auto",
-          },
-        });
-
-        el.addClasses(["media-embed", "is-loaded"]);
-      }
-
-      /*
-      if (videoExt.contains(target.extension)) {
-        return handleVideo(el, target, view);
-      }
-
-      if (target.extension === "md") {
-        return await handleMarkdown(el, target, normalizedPath, view, depth);
-      }
-      */
-    });
-
-    container.appendChild(el);
-
-    if (node) card = { ...card, width: node.getBoundingClientRect().width };
+  function width(currentNode: HTMLElement) {
+    node = currentNode;
+    updateWidth();
   }
 
   function onEdit({ detail: newCard }) {
@@ -137,7 +39,7 @@
   }
 
   onMount(() => {
-    card = { ...card, width: node.getBoundingClientRect().width };
+    updateWidth();
   });
 </script>
 
@@ -159,7 +61,12 @@
   {:else}
     <div class="card">
       <div class="content">
-        <div use:markdownContent />
+        <MarkdownRender
+          on:udpated={() => updateWidth()}
+          content={card.content}
+          {view}
+          {file}
+        />
       </div>
 
       <button
