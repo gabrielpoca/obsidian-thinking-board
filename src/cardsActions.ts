@@ -9,31 +9,20 @@ type AddCard = Omit<Card, "id" | "updatedAt" | "type">;
 type AddConnection = Omit<Connection, "id" | "updatedAt" | "type">;
 
 interface HistoryCard extends Card {
-  type: "card";
-}
-
-interface NewHistoryCard extends Card {
-  type: "newCard";
+  type: "updatedCard" | "newCard" | "deletedCard";
 }
 
 interface HistoryConnection extends Connection {
-  type: "connection";
-}
-
-interface NewHistoryConnection extends Connection {
-  type: "newConnection";
+  type: "updatedConnection" | "newConnection" | "deletedConnection";
 }
 
 interface EditCard extends Partial<Card> {
   id: string;
 }
 
-let history: (
-  | HistoryCard
-  | HistoryConnection
-  | NewHistoryCard
-  | NewHistoryConnection
-)[] = [];
+let history: (HistoryCard | HistoryConnection)[] = [];
+
+let redoHistory: (HistoryCard | HistoryConnection)[] = [];
 
 function dateDiff(date: Date | string | undefined) {
   if (!date) return 0;
@@ -47,17 +36,19 @@ function dateDiff(date: Date | string | undefined) {
   return now - date.getTime();
 }
 
-function saveCardToHistory(card: Card) {
+function saveCardToHistory(card: Card, resetRedoHistory = true) {
   if (history.length > 20) history.shift();
 
   const lastCard = history[history.length - 1];
 
-  if (!lastCard) return history.push({ ...card, type: "card" });
+  if (!lastCard)
+    return historyPush({ ...card, type: "updatedCard" }, resetRedoHistory);
 
-  if (lastCard.id !== card.id) return history.push({ ...card, type: "card" });
+  if (lastCard.id !== card.id)
+    return historyPush({ ...card, type: "updatedCard" }, resetRedoHistory);
 
   if (dateDiff(lastCard.updatedAt) > 700)
-    return history.push({ ...card, type: "card" });
+    return historyPush({ ...card, type: "updatedCard" }, resetRedoHistory);
 }
 
 export const undo = () => {
@@ -65,17 +56,72 @@ export const undo = () => {
 
   const lastItem = history.pop();
 
-  if (lastItem.type === "card") updateCard(lastItem, false);
-  if (lastItem.type === "newCard") removeCard(lastItem.id, false);
-  if (lastItem.type === "connection") addConnection(lastItem, false);
-  if (lastItem.type === "newConnection") removeConnection(lastItem.id, false);
+  if (lastItem.type === "updatedCard") {
+    const prev = updateCard(lastItem, false);
+    redoHistory.push({ ...prev, type: "updatedCard" });
+  }
+
+  if (lastItem.type === "newCard") {
+    const prev = removeCard(lastItem.id, false);
+    redoHistory.push({ ...prev, type: "newCard" });
+  }
+
+  if (lastItem.type === "deletedCard") {
+    const prev = addCard(lastItem, false);
+    redoHistory.push({ ...prev, type: "deletedCard" });
+  }
+
+  // if (lastItem.type === "updatedConnection") {
+  //   const prev = addConnection(lastItem, false);
+  //   redoHistory.push({ ...prev, type: "updatedConnection" });
+  // }
+
+  if (lastItem.type === "newConnection") {
+    const prev = removeConnection(lastItem.id, false);
+    redoHistory.push({ ...prev, type: "newConnection" });
+  }
+
+  if (lastItem.type === "deletedConnection") {
+    const prev = addConnection(lastItem, false);
+    redoHistory.push({ ...prev, type: "deletedConnection" });
+  }
 };
 
 export const redo = () => {
-  console.log(history);
+  if (redoHistory.length === 0) return;
+
+  const lastItem = redoHistory.pop();
+
+  if (lastItem.type === "updatedCard") {
+    updateCard(lastItem, true, false);
+  }
+
+  if (lastItem.type === "newCard") {
+    addCard(lastItem, true, false);
+  }
+
+  if (lastItem.type === "deletedConnection") {
+    removeConnection(lastItem.id, true, false);
+  }
+
+  if (lastItem.type === "newConnection") {
+    addConnection(lastItem, true, false);
+  }
 };
 
-export const addCard = ({ content, pos }: AddCard, pushToHistory = true) => {
+function historyPush(
+  item: HistoryCard | HistoryConnection,
+  resetRedoHistory: Boolean
+) {
+  history.push(item);
+  if (resetRedoHistory) redoHistory = [];
+}
+
+export const addCard = (
+  { content, pos }: AddCard,
+  pushToHistory = true,
+  resetRedoHistory = true
+): Card => {
   const card = {
     id: uuidv4(),
     content,
@@ -86,10 +132,15 @@ export const addCard = ({ content, pos }: AddCard, pushToHistory = true) => {
 
   cards.update((cards) => [...cards, , card]);
 
-  if (pushToHistory) history.push({ ...card, type: "newCard" });
+  if (pushToHistory)
+    historyPush({ ...card, type: "newCard" }, resetRedoHistory);
+
+  return card;
 };
 
-export const removeCard = (id: string, pushToHistory = true) => {
+export const removeCard = (id: string, pushToHistory = true): Card => {
+  let found: Card;
+
   connections.update((connections) =>
     connections.filter(({ start, end }) => start !== id && end !== id)
   );
@@ -97,7 +148,9 @@ export const removeCard = (id: string, pushToHistory = true) => {
   cards.update((cards) =>
     cards.filter((card) => {
       if (card.id === id) {
-        if (pushToHistory) history.push({ ...card, type: "card" });
+        found = card;
+        if (pushToHistory)
+          historyPush({ ...card, type: "deletedCard" }, resetRedoHistory);
 
         if (history.length > 20) history.shift();
       }
@@ -105,30 +158,37 @@ export const removeCard = (id: string, pushToHistory = true) => {
       return card.id !== id;
     })
   );
+
+  return found;
 };
 
-export const updateCard = (newCard: EditCard, pushToHistory = true) => {
-  let found = false;
+export const updateCard = (
+  newCard: EditCard,
+  pushToHistory = true,
+  resetRedoHistory = true
+): Card => {
+  let found: Card;
 
   cards.update((cards) =>
     cards.map((card) => {
       if (card.id !== newCard.id) return card;
 
-      if (pushToHistory) saveCardToHistory(card);
-
-      found = true;
+      found = card;
 
       return { ...card, ...newCard, updatedAt: new Date() };
     })
   );
+
+  if (pushToHistory) saveCardToHistory(found, resetRedoHistory);
 
   return found;
 };
 
 export const addConnection = (
   newConnection: AddConnection,
-  pushToHistory = true
-) => {
+  pushToHistory = true,
+  resetRedoHistory = true
+): Connection => {
   const connection = {
     ...newConnection,
     id: uuidv4(),
@@ -138,23 +198,32 @@ export const addConnection = (
 
   connections.update((connections) => [connection, ...connections]);
 
-  if (pushToHistory) {
-    history.push({ ...connection, type: "newConnection" });
-  }
+  if (pushToHistory)
+    historyPush({ ...connection, type: "newConnection" }, resetRedoHistory);
+
+  return connection;
 };
 
 export const removeConnection = (
   connectionId: string,
-  pushToHistory = true
-) => {
+  pushToHistory = true,
+  resetRedoHistory = true
+): Connection => {
+  let connection: Connection;
+
   connections.update((connections) => {
     const [[found], newConnections] = partition(
       connections,
       ({ id }) => id === connectionId
     );
 
-    if (pushToHistory) history.push({ ...found, type: "connection" });
+    connection = found;
 
     return newConnections;
   });
+
+  if (pushToHistory)
+    historyPush({ ...connection, type: "deletedConnection" }, resetRedoHistory);
+
+  return connection;
 };
