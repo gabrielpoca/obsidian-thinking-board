@@ -51,13 +51,18 @@ function saveCardToHistory(card: Card, opts = defaultOpts) {
 
   const lastCard = history[history.length - 1];
 
-  if (!lastCard) return historyPush({ ...card, type: "updatedCard" }, opts);
+  if (!lastCard)
+    return historyPush(
+      { ...card, updatedAt: new Date(), type: "updatedCard" },
+      opts
+    );
 
   if (lastCard.id !== card.id)
     return historyPush({ ...card, type: "updatedCard" }, opts);
 
-  if (dateDiff(lastCard.updatedAt) > 700)
+  if (dateDiff(lastCard.updatedAt) > 1500) {
     return historyPush({ ...card, type: "updatedCard" }, opts);
+  }
 }
 
 const undoOpts = {
