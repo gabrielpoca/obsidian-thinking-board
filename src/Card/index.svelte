@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { TFile, TextFileView } from "obsidian";
-  import { createEventDispatcher, onMount } from "svelte";
+  import { createEventDispatcher, afterUpdate } from "svelte";
 
   import type { Card } from "../types";
 
@@ -18,6 +18,7 @@
   let node: HTMLElement;
   let editing = false;
   let hover = false;
+  let changed = true;
 
   function updateWidth() {
     card = { ...card, width: node.getBoundingClientRect().width };
@@ -35,9 +36,15 @@
   function onEdit({ detail: newCard }) {
     editing = false;
     updateCard({ id: card.id, ...newCard });
+    changed = true;
   }
 
-  onMount(() => updateWidth());
+  afterUpdate(() => {
+    if (changed) {
+      updateWidth();
+      changed = false;
+    }
+  });
 </script>
 
 <Box

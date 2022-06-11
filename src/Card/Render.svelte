@@ -53,6 +53,7 @@
   .content {
     user-select: none;
     -webkit-user-select: none;
+    line-height: 1.1;
   }
 
   .content :global(h1:not(:last-child)),
