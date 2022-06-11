@@ -8,5 +8,6 @@ declare namespace svelte.JSX {
     type?: string;
     name?: string;
     checked?: boolean | string;
+    onchange?: (event: any) => any;
   }
 }
