@@ -7,7 +7,7 @@ export interface Card {
     y: number;
   };
   updatedAt: Date;
-  type: "markdown" | "image";
+  type: "markdown" | "asset";
 }
 
 export interface Connection {

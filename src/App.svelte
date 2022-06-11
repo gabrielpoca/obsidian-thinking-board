@@ -15,7 +15,7 @@
     windowSizes,
   } from "./stores";
 
-  import Card from "./Card.svelte";
+  import Card from "./Card/index.svelte";
   import NewCard from "./NewCard.svelte";
   import Zoom from "./Zoom.svelte";
   import Connections from "./Connections.svelte";
@@ -100,7 +100,7 @@
         addCard({
           content,
           pos: cursorPos,
-          type: "markdown",
+          type: "asset",
         });
       }
     }
@@ -139,7 +139,7 @@
       addCard({
         content,
         pos: cursorPos,
-        type: "markdown",
+        type: "asset",
       });
     }
   }

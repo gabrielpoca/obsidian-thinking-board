@@ -4,6 +4,7 @@
   import { clickOutside } from "./clickOutside";
   import { zoom } from "./stores";
 
+  export let padding: Boolean = true;
   export let useClickOutside = false;
   export let action: (node: HTMLElement) => any = (fn) => fn;
   export let zIndex: string | number = "auto";
@@ -97,6 +98,7 @@
   use:move={moving}
   class:hover
   class:moving
+  class:padding
   class="root"
   style="z-index:{zIndex};top:{y}px;left:{x}px"
 >
@@ -110,8 +112,11 @@
     border: 4px solid #20004b;
     background: white;
     overflow: hidden;
-    padding: 20px;
     transition: box-shadow 0.1s ease-out, transform 0.1s ease-out;
+  }
+
+  .padding {
+    padding: 20px;
   }
 
   .hover {
