@@ -1,5 +1,6 @@
 import { cards, backup, assets, connections } from "./stores";
 import type { Card, Connection, Assets } from "./types";
+import { resetHistory } from "./cardsActions";
 
 export function onSave(
   callback: (
@@ -31,4 +32,6 @@ export async function load(
     connections.set([]);
     console.log(e);
   }
+
+  resetHistory();
 }

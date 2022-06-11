@@ -17,13 +17,16 @@
   export let id: string;
   export let todoState: string = "todo";
 
-  let checked = todoState === "done";
+  $: checked = todoState === "done";
 
-  $: {
+  function toggleTodo(e: InputEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+
     if (checked) {
-      updateCard({ id, todoState: "done" });
-    } else {
       updateCard({ id, todoState: "todo" });
+    } else {
+      updateCard({ id, todoState: "done" });
     }
   }
 
@@ -38,7 +41,7 @@
       <MarkdownRender on:udpated={() => updated()} {content} {view} {file} />
     {:else if type === "todo"}
       <div class="todo">
-        <input type="checkbox" bind:checked />
+        <input type="checkbox" {checked} on:change={toggleTodo} />
         <MarkdownRender on:udpated={() => updated()} {content} {view} {file} />
       </div>
     {:else}

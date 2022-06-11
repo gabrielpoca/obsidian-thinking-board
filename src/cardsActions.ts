@@ -34,6 +34,11 @@ let history: (HistoryCard | HistoryConnection)[] = [];
 
 let redoHistory: (HistoryCard | HistoryConnection)[] = [];
 
+export function resetHistory() {
+  history = [];
+  redoHistory = [];
+}
+
 function dateDiff(date: Date | string | undefined) {
   if (!date) return 0;
 
