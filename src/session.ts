@@ -1,16 +1,27 @@
-import { cards, backup, connections } from "./stores";
+import { cards, backup, assets, connections } from "./stores";
+import type { Card, Connection, Assets } from "./types";
 
-export function onSave(callback: (data: string) => void) {
-  return backup.subscribe((data) => {
-    if (data.cards.length > 0) callback(JSON.stringify(data));
+export function onSave(
+  callback: (
+    newBoard: { cards: Card[]; connections: Connection[] },
+    assets: Assets
+  ) => void
+) {
+  return backup.subscribe(({ cards, connections, assets }) => {
+    if (cards.length > 0) callback({ cards, connections }, assets);
   });
 }
 
-export async function load(data: string) {
+export async function load(
+  board: { cards: any; connections: any },
+  newAssets: any
+) {
   try {
-    const { cards: cardsData, connections: connectionsData } = JSON.parse(data);
+    assets.set(newAssets);
 
-    if (cardsData) cards.set(cardsData);
+    const { cards: cardsData, connections: connectionsData } = board;
+
+    if (cardsData) cards.set(cardsData.filter((c: any) => c));
     else cards.set([]);
 
     if (connectionsData) connections.set(connectionsData);

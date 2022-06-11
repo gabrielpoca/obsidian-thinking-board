@@ -2,6 +2,8 @@
   import { MarkdownRenderer, TFile, TextFileView } from "obsidian";
   import { createEventDispatcher } from "svelte";
 
+  import { assets } from "./stores";
+
   export let file: TFile;
   export let view: TextFileView;
   export let content = "";
@@ -45,7 +47,13 @@
       MarkdownRenderer.renderMarkdown(content, el, file.path, view);
 
       el.findAll(".internal-embed").map((el) => {
-        const src = el.getAttribute("src");
+        const src = $assets[el.getAttribute("src")];
+
+        if (!src)
+          return console.error(
+            "Failed to render embed",
+            el.getAttribute("src")
+          );
 
         const normalizedPath = getNormalizedPath(src);
         const target =

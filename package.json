@@ -27,6 +27,8 @@
     "@types/lodash": "^4.14.182",
     "@types/uuid": "^8.3.4",
     "lodash": "^4.17.21",
+    "mdast-util-from-markdown": "^1.2.0",
+    "monkey-around": "^2.3.0",
     "obsidian": "^0.14.8",
     "rollup-plugin-workbox": "^6.2.0",
     "uuid": "^8.3.2"

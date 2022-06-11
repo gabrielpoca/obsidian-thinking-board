@@ -7,6 +7,7 @@ export interface Card {
     y: number;
   };
   updatedAt: Date;
+  type: "markdown" | "image";
 }
 
 export interface Connection {
@@ -15,3 +16,5 @@ export interface Connection {
   end: string;
   updatedAt: Date;
 }
+
+export type Assets = Record<string, string>;

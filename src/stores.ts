@@ -1,16 +1,20 @@
 import { writable, derived } from "svelte/store";
 
-import type { Card, Connection } from "./types";
+import type { Card, Connection, Assets } from "./types";
 
 export const zoom = writable(1);
 export const lastPosition = writable({ x: 0, y: 0 });
 
+export const assets = writable<Assets>({});
 export const cards = writable<Card[]>([]);
 export const connections = writable<Connection[]>([]);
 
-export const backup = derived([cards, connections], ([cards, connections]) => {
-  return { cards, connections };
-});
+export const backup = derived(
+  [cards, connections, assets],
+  ([cards, connections, assets]) => {
+    return { cards, connections, assets };
+  }
+);
 
 export const currentConnectionID = writable<null | string>();
 export const connectingCardID = writable<null | string>();

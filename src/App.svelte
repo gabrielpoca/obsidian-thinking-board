@@ -5,6 +5,7 @@
 
   import {
     cards,
+    assets,
     connectingCardID,
     zoom,
     currentConnectionID,
@@ -54,6 +55,7 @@
     addCard({
       content,
       pos: { y, x },
+      type: "markdown",
     });
   }
 
@@ -79,16 +81,26 @@
       if (item.kind === "file") {
         const file = item.getAsFile();
 
-        const content = await saveFile(
+        const newFile = await saveFile(
           app,
           file.name,
           //@ts-ignore
           await file.arrayBuffer()
         );
 
+        const content = app.fileManager.generateMarkdownLink(
+          newFile,
+          newFile.path,
+          "",
+          ""
+        );
+
+        $assets = { ...$assets, [newFile.name]: newFile.name };
+
         addCard({
           content,
           pos: cursorPos,
+          type: "markdown",
         });
       }
     }
@@ -113,11 +125,21 @@
       //@ts-ignore
       const buffer = await fs.readFile(f.path);
 
-      const content = await saveFile(app, path, buffer);
+      const newFile = await saveFile(app, path, buffer);
+
+      const content = app.fileManager.generateMarkdownLink(
+        newFile,
+        newFile.path,
+        "",
+        ""
+      );
+
+      $assets = { ...$assets, [newFile.name]: newFile.name };
 
       addCard({
         content,
         pos: cursorPos,
+        type: "markdown",
       });
     }
   }

@@ -1,8 +1,23 @@
-import { debounce } from "lodash";
-import { TextFileView, WorkspaceLeaf, Plugin, TFile, TFolder } from "obsidian";
+import { debounce, map } from "lodash";
+import {
+  TextFileView,
+  WorkspaceLeaf,
+  Plugin,
+  TFile,
+  TFolder,
+  MarkdownView,
+  ViewState,
+} from "obsidian";
+import { around } from "monkey-around";
 
+import type { Assets } from "./types";
+import { parseFile } from "./parser";
 import App from "./App.svelte";
 import { load, onSave } from "./session";
+
+const VIEW_TYPE = "tk";
+const EXT = "tk";
+const FRONTMATTER_KEY = "thinking-board-plugin";
 
 class BoardView extends TextFileView {
   component: App;
@@ -18,7 +33,7 @@ class BoardView extends TextFileView {
   }
 
   getViewType() {
-    return "thinking-board";
+    return VIEW_TYPE;
   }
 
   async onLoadFile(file: TFile) {
@@ -34,8 +49,23 @@ class BoardView extends TextFileView {
 
     this.unbuscribeSave = onSave(
       debounce(
-        (newData) => {
-          this.appData = newData;
+        (newBoard: any, assets: Assets) => {
+          this.appData = [
+            "---",
+            `${FRONTMATTER_KEY}: true`,
+            "---",
+            "",
+            "## Assets",
+            "",
+            map(assets, (value, key) => `- ${key}: ![[${value}]]`).join("\n"),
+            "",
+            "## Board",
+            "",
+            "```",
+            JSON.stringify(newBoard),
+            "```",
+          ].join("\n");
+
           this.requestSave();
         },
         150,
@@ -48,6 +78,7 @@ class BoardView extends TextFileView {
 
   async onUnloadFile(file: TFile) {
     await this.unbuscribeSave();
+    this.clear();
     return super.onUnloadFile(file);
   }
 
@@ -75,9 +106,12 @@ class BoardView extends TextFileView {
     return super.onClose();
   }
 
-  setViewData(data: string, clear?: boolean) {
+  setViewData(data: string, _clear: boolean) {
     this.appData = data;
-    load(data);
+
+    const { board, assets } = parseFile(data);
+
+    load(board, assets);
   }
 
   getViewData() {
@@ -85,22 +119,26 @@ class BoardView extends TextFileView {
   }
 
   clear() {
-    return load("{}");
+    return load({ cards: [], connections: [] }, {});
   }
 }
 
 export default class BoardPlugin extends Plugin {
+  public fileModes: { [file: string]: string } = {};
+
   async onload() {
     super.onload();
 
     this.registerView(
-      "thinking-board",
+      VIEW_TYPE,
       (leaf: WorkspaceLeaf) => new BoardView(leaf, this)
     );
 
-    this.registerExtensions(["tk"], "thinking-board");
     this.registerCommands();
     this.registerEvents();
+    this.registerMonkeyPatches();
+
+    this.switchAfterLoad();
   }
 
   onunload() {}
@@ -127,6 +165,52 @@ export default class BoardPlugin extends Plugin {
     });
   }
 
+  registerMonkeyPatches() {
+    const self = this;
+
+    // Monkey patch WorkspaceLeaf to open boards with BoardView by default
+    this.register(
+      around(WorkspaceLeaf.prototype, {
+        detach(next) {
+          return function () {
+            const state = this.view?.getState();
+
+            if (state?.file && self.fileModes[this.id || state.file]) {
+              delete self.fileModes[this.id || state.file];
+            }
+
+            return next.apply(this);
+          };
+        },
+
+        setViewState(next) {
+          return function (state: ViewState, ...rest: any[]) {
+            if (
+              state.type === "markdown" &&
+              state.state?.file &&
+              self.fileModes[this.id || state.state.file] !== "markdown"
+            ) {
+              const cache = self.app.metadataCache.getCache(state.state.file);
+
+              if (cache?.frontmatter && cache.frontmatter[FRONTMATTER_KEY]) {
+                const newState = {
+                  ...state,
+                  type: VIEW_TYPE,
+                };
+
+                self.fileModes[state.state.file] = VIEW_TYPE;
+
+                return next.apply(this, [newState, ...rest]);
+              }
+            }
+
+            return next.apply(this, [state, ...rest]);
+          };
+        },
+      })
+    );
+  }
+
   async newBoard(folder?: TFolder) {
     const targetFolder = folder
       ? folder
@@ -135,22 +219,66 @@ export default class BoardPlugin extends Plugin {
         );
 
     try {
-      const path = window.require("path");
+      const board: TFile = await (
+        this.app.fileManager as any
+      ).createNewMarkdownFile(targetFolder, "Untitled Board.tk");
 
-      const targetFile = path.join(
-        targetFolder.path,
-        "Untitled Thinking Board.tk"
+      await this.app.vault.modify(
+        board,
+        [
+          "---",
+          `${FRONTMATTER_KEY}: true`,
+          "---",
+          "",
+          "## Assets",
+          "",
+          "## Board",
+          "",
+          "```",
+          "{}",
+          "```",
+        ].join("\n")
       );
 
-      //@ts-ignore
-      await this.app.vault.createBinary(targetFile, "{}");
+      this.fileModes[board.path] = VIEW_TYPE;
 
       await this.app.workspace.activeLeaf.setViewState({
-        type: "thinking-board",
-        state: { file: targetFile },
+        type: VIEW_TYPE,
+        state: { file: board.path },
       });
     } catch (e) {
       console.error("Error creating board board:", e);
     }
+  }
+
+  private switchAfterLoad() {
+    const self = this;
+
+    this.app.workspace.onLayoutReady(() => {
+      let leaf: WorkspaceLeaf;
+
+      for (leaf of self.app.workspace.getLeavesOfType("markdown")) {
+        if (
+          leaf.view instanceof MarkdownView &&
+          self.isBoardFile(leaf.view.file)
+        ) {
+          self.fileModes[(leaf as any).id || leaf.view.file.path] = VIEW_TYPE;
+
+          leaf.setViewState({
+            type: VIEW_TYPE,
+            state: leaf.view.getState(),
+            popstate: true,
+          } as ViewState);
+        }
+      }
+    });
+  }
+
+  public isBoardFile(f: TFile) {
+    if (f.extension === EXT) return true;
+
+    const fileCache = f ? this.app.metadataCache.getFileCache(f) : null;
+
+    return !!fileCache?.frontmatter && !!fileCache.frontmatter[FRONTMATTER_KEY];
   }
 }

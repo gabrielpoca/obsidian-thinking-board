@@ -5,15 +5,15 @@ import type { Card, Connection } from "./types";
 
 import { cards, connections } from "./stores";
 
-type AddCard = Omit<Card, "id" | "updatedAt" | "type">;
+type AddCard = Omit<Card, "id" | "updatedAt">;
 type AddConnection = Omit<Connection, "id" | "updatedAt" | "type">;
 
 interface HistoryCard extends Card {
-  type: "updatedCard" | "newCard" | "deletedCard";
+  action: "updatedCard" | "newCard" | "deletedCard";
 }
 
 interface HistoryConnection extends Connection {
-  type: "updatedConnection" | "newConnection" | "deletedConnection";
+  action: "updatedConnection" | "newConnection" | "deletedConnection";
 }
 
 interface EditCard extends Partial<Card> {
@@ -53,15 +53,15 @@ function saveCardToHistory(card: Card, opts = defaultOpts) {
 
   if (!lastCard)
     return historyPush(
-      { ...card, updatedAt: new Date(), type: "updatedCard" },
+      { ...card, updatedAt: new Date(), action: "updatedCard" },
       opts
     );
 
   if (lastCard.id !== card.id)
-    return historyPush({ ...card, type: "updatedCard" }, opts);
+    return historyPush({ ...card, action: "updatedCard" }, opts);
 
   if (dateDiff(lastCard.updatedAt) > 1500) {
-    return historyPush({ ...card, type: "updatedCard" }, opts);
+    return historyPush({ ...card, action: "updatedCard" }, opts);
   }
 }
 
@@ -75,34 +75,34 @@ export const undo = () => {
 
   const lastItem = history.pop();
 
-  if (lastItem.type === "updatedCard") {
+  if (lastItem.action === "updatedCard") {
     const prev = updateCard(lastItem, undoOpts);
-    redoHistory.push({ ...prev, type: "updatedCard" });
+    redoHistory.push({ ...prev, action: "updatedCard" });
   }
 
-  if (lastItem.type === "newCard") {
+  if (lastItem.action === "newCard") {
     const prev = removeCard(lastItem.id, undoOpts);
-    redoHistory.push({ ...prev, type: "newCard" });
+    redoHistory.push({ ...prev, action: "newCard" });
   }
 
-  if (lastItem.type === "deletedCard") {
+  if (lastItem.action === "deletedCard") {
     const prev = addCard(lastItem, undoOpts);
-    redoHistory.push({ ...prev, type: "deletedCard" });
+    redoHistory.push({ ...prev, action: "deletedCard" });
   }
 
-  // if (lastItem.type === "updatedConnection") {
+  // if (lastItem.action === "updatedConnection") {
   //   const prev = addConnection(lastItem, false);
-  //   redoHistory.push({ ...prev, type: "updatedConnection" });
+  //   redoHistory.push({ ...prev, action: "updatedConnection" });
   // }
 
-  if (lastItem.type === "newConnection") {
+  if (lastItem.action === "newConnection") {
     const prev = removeConnection(lastItem.id, undoOpts);
-    redoHistory.push({ ...prev, type: "newConnection" });
+    redoHistory.push({ ...prev, action: "newConnection" });
   }
 
-  if (lastItem.type === "deletedConnection") {
+  if (lastItem.action === "deletedConnection") {
     const prev = addConnection(lastItem, undoOpts);
-    redoHistory.push({ ...prev, type: "deletedConnection" });
+    redoHistory.push({ ...prev, action: "deletedConnection" });
   }
 };
 
@@ -116,19 +116,19 @@ export const redo = () => {
 
   const lastItem = redoHistory.pop();
 
-  if (lastItem.type === "updatedCard") {
+  if (lastItem.action === "updatedCard") {
     updateCard(lastItem, redoOpts);
   }
 
-  if (lastItem.type === "newCard") {
+  if (lastItem.action === "newCard") {
     addCard(lastItem, redoOpts);
   }
 
-  if (lastItem.type === "deletedConnection") {
+  if (lastItem.action === "deletedConnection") {
     removeConnection(lastItem.id, redoOpts);
   }
 
-  if (lastItem.type === "newConnection") {
+  if (lastItem.action === "newConnection") {
     addConnection(lastItem, redoOpts);
   }
 };
@@ -143,20 +143,20 @@ function historyPush(
 }
 
 export const addCard = (
-  { content, pos }: AddCard,
+  { content, pos, type }: AddCard,
   opts = defaultOpts
 ): Card => {
   const card = {
-    id: uuidv4(),
     content,
+    id: uuidv4(),
     pos,
+    type,
     updatedAt: new Date(),
-    type: "card",
   };
 
-  cards.update((cards) => [...cards, , card]);
+  cards.update((cards) => [...cards, card]);
 
-  if (opts.history) historyPush({ ...card, type: "newCard" }, opts);
+  if (opts.history) historyPush({ ...card, action: "newCard" }, opts);
 
   return card;
 };
@@ -172,7 +172,7 @@ export const removeCard = (id: string, opts = defaultOpts): Card => {
     cards.filter((card) => {
       if (card.id === id) {
         found = card;
-        if (opts.history) historyPush({ ...card, type: "deletedCard" }, opts);
+        if (opts.history) historyPush({ ...card, action: "deletedCard" }, opts);
 
         if (history.length > 20) history.shift();
       }
@@ -215,7 +215,8 @@ export const addConnection = (
 
   connections.update((connections) => [connection, ...connections]);
 
-  if (opts.history) historyPush({ ...connection, type: "newConnection" }, opts);
+  if (opts.history)
+    historyPush({ ...connection, action: "newConnection" }, opts);
 
   return connection;
 };
@@ -238,7 +239,7 @@ export const removeConnection = (
   });
 
   if (opts.history)
-    historyPush({ ...connection, type: "deletedConnection" }, opts);
+    historyPush({ ...connection, action: "deletedConnection" }, opts);
 
   return connection;
 };
