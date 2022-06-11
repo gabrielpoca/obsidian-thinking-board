@@ -59,7 +59,7 @@
   x={card.pos.x}
   y={card.pos.y}
   zIndex={editing ? 50 : "auto"}
-  padding={card.type === "markdown" || editing}
+  padding={card.type !== "asset" || editing}
 >
   {#if editing}
     <EditCard {card} on:submit={onEdit} />
@@ -69,6 +69,7 @@
       id={card.id}
       content={card.content}
       type={card.type}
+      todoState={card.todoState}
       {file}
       {hover}
       {view}

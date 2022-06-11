@@ -7,7 +7,8 @@ export interface Card {
     y: number;
   };
   updatedAt: Date;
-  type: "markdown" | "asset";
+  type: "markdown" | "asset" | "todo";
+  todoState?: "todo" | "done";
 }
 
 export interface Connection {

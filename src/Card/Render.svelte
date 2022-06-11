@@ -5,6 +5,7 @@
   import { connectingCardID } from "../stores";
   import MarkdownRender from "../MarkdownRender.svelte";
   import AssetRenderer from "../AssetRender.svelte";
+  import { updateCard } from "../cardsActions";
 
   const dispatch = createEventDispatcher();
 
@@ -14,6 +15,17 @@
   export let type: string;
   export let content: string;
   export let id: string;
+  export let todoState: string = "todo";
+
+  let checked = todoState === "done";
+
+  $: {
+    if (checked) {
+      updateCard({ id, todoState: "done" });
+    } else {
+      updateCard({ id, todoState: "todo" });
+    }
+  }
 
   function updated() {
     dispatch("updated");
@@ -24,6 +36,11 @@
   <div class="content">
     {#if type === "markdown"}
       <MarkdownRender on:udpated={() => updated()} {content} {view} {file} />
+    {:else if type === "todo"}
+      <div class="todo">
+        <input type="checkbox" bind:checked />
+        <MarkdownRender on:udpated={() => updated()} {content} {view} {file} />
+      </div>
     {:else}
       <AssetRenderer on:udpated={() => updated()} {content} {view} {file} />
     {/if}
@@ -39,6 +56,15 @@
 </div>
 
 <style>
+  .todo {
+    display: flex;
+  }
+
+  .todo input {
+    pointer-events: auto;
+    margin-right: 20px;
+  }
+
   .card {
     min-width: 200px;
     max-width: var(--card-max-width);

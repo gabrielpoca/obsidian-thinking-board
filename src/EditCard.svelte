@@ -3,7 +3,7 @@
 
   import type { Card } from "./types";
 
-  import { removeCard, updateCard } from "./cardsActions";
+  import { removeCard } from "./cardsActions";
 
   import TextArea from "./TextArea.svelte";
   import Button from "./Button.svelte";
@@ -15,7 +15,7 @@
   let value = card.content;
   let type = card.type;
 
-  const types = ["markdown", "asset"];
+  const types = ["markdown", "asset", "todo"];
 
   function onSubmit() {
     dispatch("submit", { content: value, type });
