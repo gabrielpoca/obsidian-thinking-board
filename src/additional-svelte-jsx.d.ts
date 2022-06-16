@@ -4,6 +4,7 @@ declare namespace svelte.JSX {
   }
 
   interface SvelteInputProps {
+    onclick?: (event: any) => any;
     value?: string | number;
     type?: string;
     name?: string;
