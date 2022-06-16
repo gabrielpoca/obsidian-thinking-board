@@ -191,7 +191,7 @@
       <div class="backgroundColor" />
       <div
         class="background"
-        style="background-size: calc(25px * {2 - $zoom});"
+        style="background-size: calc(28px * {2 - $zoom});"
       />
 
       <Connections />
@@ -235,7 +235,7 @@
   }
 
   .backgroundColor {
-    background: linear-gradient(45deg, #caa3ff 0%, #ffccdd 55%);
+    background: linear-gradient(90deg, #caa3ff 0%, #ffccdd 65%);
     position: absolute;
     top: 0;
     left: 0;
@@ -246,7 +246,7 @@
   }
 
   .background {
-    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAADKSURBVHgB7dWxDYMwEIXhc1iAFgl2YAQySbIJZJIkmzACO1DQZgEgZ4UyCS7uJIr/kywh+Zon7GcRAAAAAABwREGcjOPYZFnW6metK9fVL8vyLMvyIQ5cgkzT1K7r2n3bCyF0RVHcxJh5EA1x1RD3fzPzPJ+rqurF0EmMaYjL3sx25EyZB1FNwkwtxjyCvBJmcjHmEWRImOnFmHkQvci7jRRrWIyZB4ltpBf+Z5i45/GWuD2IWw3HBmvkc2+G+LesaxcAAAAAABzbG4IsQA+BmH+JAAAAAElFTkSuQmCC);
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACMAAAAjCAYAAAAe2bNZAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACNSURBVHgB7dXRCYUwEETRyavg2VE61E60BSuKHawL5sMv2RFcROZAEGFNLogIiIiI3Gdm1dfsq9mh9fuKTH7gaNdGZAiE5AT1V8OoeIpvvhhnYfYvzLBv3vzyJx7ZSilDdJiNMZA8JnzGD5wNHGqejVnBYefjXvU19aApGDIhQyAoJ+QU9I5/k4iIfM0OoTVzcvdz8rIAAAAASUVORK5CYII=);
     position: absolute;
     top: 0;
     left: 0;

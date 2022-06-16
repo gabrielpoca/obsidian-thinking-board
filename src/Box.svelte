@@ -109,23 +109,25 @@
   .root {
     cursor: pointer;
     position: absolute;
-    border: 4px solid #20004b;
+    /* border: 4px solid #20004b; */
     background: white;
     overflow: hidden;
     transition: box-shadow 0.1s ease-out, transform 0.1s ease-out;
+    box-shadow: 2px 3px 1px 1px rgba(169, 106, 255, 0.4);
   }
 
   .padding {
-    padding: 20px;
+    padding: 22px;
   }
 
   .hover {
-    box-shadow: 3px 3px 1px 1px rgba(169, 106, 255, 0.4);
+    box-shadow: 4px 4px 1px 1px rgba(169, 106, 255, 0.5);
     transform: translate(-2px, -2px);
   }
 
   .moving {
     box-shadow: 6px 6px 2px 1px rgba(169, 106, 255, 0.6);
+    transform: translate(-3px, -3px);
     z-index: 99;
   }
 </style>

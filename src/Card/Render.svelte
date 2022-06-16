@@ -41,7 +41,7 @@
       <MarkdownRender on:udpated={() => updated()} {content} {view} {file} />
     {:else if type === "todo"}
       <div class="todo">
-        <input type="checkbox" {checked} on:change={toggleTodo} />
+        <input on:click={e => e.stopPropagation()} type="checkbox" {checked} on:change={toggleTodo} />
         <MarkdownRender on:udpated={() => updated()} {content} {view} {file} />
       </div>
     {:else}
